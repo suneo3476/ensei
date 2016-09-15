@@ -158,7 +158,7 @@ workbook.xlsx.readFile(targetFile).then(function () {
 					},
 
 					show: function(){
-						return str = ""
+						return ""
 						+ "▶ " + this.combi.join('-') + "\n" 
 						+ "▶ " + quests.map(function(x){return x.name}).join(', ') + "\n"
 						+ "▶ " + quests.map(function(x){return x.time}).join(', ') + "\n"
