@@ -2,6 +2,7 @@
 
 const Excel = require('exceljs')
 const Moment = require('moment')
+const Funcy = require('funcy')
 const Combinatorics = require('./combinatorics.js')
 
 const targetFile = "enseikun.xlsx"
@@ -11,10 +12,13 @@ workbook.xlsx.readFile(targetFile).then(function () {
 
 	//入力
 	const number_of_fleets = 3 //組み合わせる艦隊の数
+	//const require_enseiID = [2,null,null]//含めたい遠征のID(3つまで、無い場合null)
+	// const r = number_of_fleets - require_enseiID.filter(function(val){return val != null}).length
 	//単発で出す遠征の最高時間
 	const maxtime = {
-		h: 6, //○時間
+		h: 8, //○時間
 		m: 0, //○分
+
 		init: function(){
 			this.str = Moment("00:" + this.h + ":" + this.m, "HH:mm:ss").format("HH:mm:ss")
 			return this
@@ -27,48 +31,49 @@ workbook.xlsx.readFile(targetFile).then(function () {
 
 	//2行から40行まで
 	for (let i = 3; i <= 40; ++i) {
-		let quest = {}
-		quest.id = s.getCell(i, 1).value
-		quest.name = s.getCell(i, 2).value
-		quest.time = s.getCell(i, 3).value
-		quest.once = {
-			n: s.getCell(i, 10).value,
-			d: s.getCell(i, 11).value,
-			k: s.getCell(i, 12).value,
-			b: s.getCell(i, 13).value
+		let quest = {
+			id : s.getCell(i, 1).value,
+			name : s.getCell(i, 2).value,
+			time : s.getCell(i, 3).value,
+			once : {
+				n: s.getCell(i, 10).value,
+				d: s.getCell(i, 11).value,
+				k: s.getCell(i, 12).value,
+				b: s.getCell(i, 13).value
+			},
+			oncebig : {
+				n: s.getCell(i, 14).value,
+				d: s.getCell(i, 15).value,
+				k: s.getCell(i, 16).value,
+				b: s.getCell(i, 17).value
+			},
+			hour : {
+				n: s.getCell(i, 18).value,
+				d: s.getCell(i, 19).value,
+				k: s.getCell(i, 20).value,
+				b: s.getCell(i, 21).value
+			},
+			hourbig : {
+				n: s.getCell(i, 22).value,
+				d: s.getCell(i, 23).value,
+				k: s.getCell(i, 24).value,
+				b: s.getCell(i, 25).value
+			},
+			fleet : s.getCell(i, 26).value != null ? s.getCell(i, 26).value + " " : "" 
+						+ s.getCell(i, 27).value != null ? s.getCell(i, 27).value + " " : "" 
+						+ s.getCell(i, 28).value != null ? s.getCell(i, 28).value + " " : "" 
+						+ s.getCell(i, 29).value != null ? s.getCell(i, 29).value : "",
+			consumption : {
+				n: s.getCell(i, 30).value,
+				d: s.getCell(i, 31).value
+			},
+			ratio_consumption : {
+				n: s.getCell(i, 30).value,
+				d: s.getCell(i, 31).value
+			},
+			rate_suc : s.getCell(i, 34).value,
+			rate_bigsuc : s.getCell(i, 35).value,
 		}
-		quest.oncebig = {
-			n: s.getCell(i, 14).value,
-			d: s.getCell(i, 15).value,
-			k: s.getCell(i, 16).value,
-			b: s.getCell(i, 17).value
-		}
-		quest.hour = {
-			n: s.getCell(i, 18).value,
-			d: s.getCell(i, 19).value,
-			k: s.getCell(i, 20).value,
-			b: s.getCell(i, 21).value
-		}
-		quest.hourbig = {
-			n: s.getCell(i, 22).value,
-			d: s.getCell(i, 23).value,
-			k: s.getCell(i, 24).value,
-			b: s.getCell(i, 25).value
-		}
-		quest.fleet = s.getCell(i, 26).value != null ? s.getCell(i, 26).value + " " : "" 
-					+ s.getCell(i, 27).value != null ? s.getCell(i, 27).value + " " : "" 
-					+ s.getCell(i, 28).value != null ? s.getCell(i, 28).value + " " : "" 
-					+ s.getCell(i, 29).value != null ? s.getCell(i, 29).value : ""
-		quest.consumption = {
-			n: s.getCell(i, 30).value,
-			d: s.getCell(i, 31).value
-		}
-		quest.ratio_consumption = {
-			n: s.getCell(i, 30).value,
-			d: s.getCell(i, 31).value
-		}
-		quest.rate_suc = s.getCell(i, 34).value
-		quest.rate_bigsuc = s.getCell(i, 35).value
 		quests.push(quest)
 	}
 
@@ -95,19 +100,24 @@ workbook.xlsx.readFile(targetFile).then(function () {
 
 			//map start
 			this.patterns = this.patterns.map(function(elm){
-
-				const x = quest(elm[0]),
-					  y = quest(elm[1]),
-					  z = quest(elm[2])
-
+				const quests = elm.map(function(current,index,array){
+						return quest(current)
+					  })
 				return {
 					combi: elm ,
 					once: {
-						n: x.once.n * x.rate_suc + y.once.n * y.rate_suc + z.once.n * z.rate_suc + x.oncebig.n * x.rate_bigsuc + y.oncebig.n * y.rate_bigsuc + z.oncebig.n * z.rate_bigsuc,
-						d: x.once.d * x.rate_suc + y.once.d * y.rate_suc + z.once.d * z.rate_suc + x.oncebig.d * x.rate_bigsuc + y.oncebig.d * y.rate_bigsuc + z.oncebig.d * z.rate_bigsuc,
-						k: x.once.k * x.rate_suc + y.once.k * y.rate_suc + z.once.k * z.rate_suc + x.oncebig.k * x.rate_bigsuc + y.oncebig.k * y.rate_bigsuc + z.oncebig.k * z.rate_bigsuc,
-						b: x.once.b * x.rate_suc + y.once.b * y.rate_suc + z.once.b * z.rate_suc + x.oncebig.b * x.rate_bigsuc + y.oncebig.b * y.rate_bigsuc + z.oncebig.b * z.rate_bigsuc,
-						
+						n: quests.reduce(function(x,y){
+											return x + y.once.n * y.rate_suc + y.oncebig.n * y.rate_bigsuc
+										}, 0),
+						d: quests.reduce(function(x,y){
+											return x + y.once.d * y.rate_suc + y.oncebig.d * y.rate_bigsuc
+										}, 0),
+						k: quests.reduce(function(x,y){
+											return x + y.once.k * y.rate_suc + y.oncebig.k * y.rate_bigsuc
+										}, 0),
+						b: quests.reduce(function(x,y){
+											return x + y.once.b * y.rate_suc + y.oncebig.b * y.rate_bigsuc
+										}, 0),
 						init: function(){
 							this.sum = this.n + this.d + this.k + this.b
 							this.nd = this.n + this.d
@@ -117,11 +127,18 @@ workbook.xlsx.readFile(targetFile).then(function () {
 					}.init(),
 
 					hour: {
-						n: x.hour.n * x.rate_suc + y.hour.n * y.rate_suc + z.hour.n * z.rate_suc + x.oncebig.n * x.rate_bigsuc + y.oncebig.n * y.rate_bigsuc + z.oncebig.n * z.rate_bigsuc,
-						d: x.hour.d * x.rate_suc + y.hour.d * y.rate_suc + z.hour.d * z.rate_suc + x.oncebig.d * x.rate_bigsuc + y.oncebig.d * y.rate_bigsuc + z.oncebig.d * z.rate_bigsuc,
-						k: x.hour.k * x.rate_suc + y.hour.k * y.rate_suc + z.hour.k * z.rate_suc + x.oncebig.k * x.rate_bigsuc + y.oncebig.k * y.rate_bigsuc + z.oncebig.k * z.rate_bigsuc,
-						b: x.hour.b * x.rate_suc + y.hour.b * y.rate_suc + z.hour.b * z.rate_suc + x.oncebig.b * x.rate_bigsuc + y.oncebig.b * y.rate_bigsuc + z.oncebig.b * z.rate_bigsuc,
-
+						n: quests.reduce(function(x,y){
+											return x + y.hour.n * y.rate_suc + y.hourbig.n * y.rate_bigsuc
+										}, 0),
+						d: quests.reduce(function(x,y){
+											return x + y.hour.d * y.rate_suc + y.hourbig.d * y.rate_bigsuc
+										}, 0),
+						k: quests.reduce(function(x,y){
+											return x + y.hour.k * y.rate_suc + y.hourbig.k * y.rate_bigsuc
+										}, 0),
+						b: quests.reduce(function(x,y){
+											return x + y.hour.b * y.rate_suc + y.hourbig.b * y.rate_bigsuc
+										}, 0),
 						init: function(){
 							this.sum = this.n + this.d + this.k + this.b
 							this.nd = this.n + this.d
@@ -130,25 +147,25 @@ workbook.xlsx.readFile(targetFile).then(function () {
 
 					}.init(),
 
-					maxtime: [x.time, y.time, z.time].sort(function(a,b){
-								return a < b
-							}).shift()
-							,
+					maxtime: quests.map(function(x){
+											return x.time
+										}).sort(function(a,b){
+											return a < b
+										}).shift(),
 					
 					cut: function(num){
 						return Math.floor(num*100,2)/100
 					},
 
 					show: function(){
-						const str = ""
+						return str = ""
 						+ "▶ " + this.combi.join('-') + "\n" 
-						+ "▶ " + x.name + ", " + y.name + ", " + z.name + "\n"
-						+ "▶ " + x.time + ", " + y.time + ", " + z.time + "\n"
+						+ "▶ " + quests.map(function(x){return x.name}).join(', ') + "\n"
+						+ "▶ " + quests.map(function(x){return x.time}).join(', ') + "\n"
 						+ "[単発]: <SUM合計> " + this.cut(this.once.sum)
 						+ " <ND燃料+弾薬> " + this.cut(this.once.nd) + "\n"
 						+ "[時給]: <SUM合計> " + this.cut(this.hour.sum)
 						+ " <ND燃料+弾薬> " + this.cut(this.hour.nd)　+ "\n"
-						return str
 					}
 				}
 			})
@@ -157,10 +174,8 @@ workbook.xlsx.readFile(targetFile).then(function () {
 		},
 		rank_once_nd: function(maxtime){
 			return this.patterns.filter(function(a){
-				// console.log(a.combi,a.maxtime,maxtime.str,a.maxtime<maxtime.str)
 				return a.maxtime < maxtime.str
 			}).sort(function(a,b){
-				// console.log(quest(a.combi[0]).id)
 				return b.once.nd - a.once.nd
 			})			
 		},	
