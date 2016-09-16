@@ -3,17 +3,17 @@
 const Excel = require('exceljs')
 const Moment = require('moment')
 const Funcy = require('funcy')
+const _ = require('underscore')
 const Combinatorics = require('./combinatorics.js')
 
 const targetFile = "enseikun.xlsx"
 const workbook = new Excel.Workbook()
 
 workbook.xlsx.readFile(targetFile).then(function () {
-
 	//入力
 	const number_of_fleets = 3 //組み合わせる艦隊の数
-	//const require_enseiID = [2,null,null]//含めたい遠征のID(3つまで、無い場合null)
-	// const r = number_of_fleets - require_enseiID.filter(function(val){return val != null}).length
+	const require_enseiID = [2,null,null]//含めたい遠征のID(3つまでカンマ(,)区切りで入力、希望がない場合はnull)
+							.splice(0,number_of_fleets).filter(function(x){return x!=null})
 	//単発で出す遠征の最高時間
 	const maxtime = {
 		h: 8, //○時間
@@ -157,64 +157,103 @@ workbook.xlsx.readFile(targetFile).then(function () {
 						return Math.floor(num*100,2)/100
 					},
 
-					show: function(){
-						return ""
-						+ "▶ " + this.combi.join('-') + "\n" 
-						+ "▶ " + quests.map(function(x){return x.name}).join(', ') + "\n"
-						+ "▶ " + quests.map(function(x){return x.time}).join(', ') + "\n"
-						+ "[単発]: <SUM合計> " + this.cut(this.once.sum)
-						+ " <ND燃料+弾薬> " + this.cut(this.once.nd) + "\n"
-						+ "[時給]: <SUM合計> " + this.cut(this.hour.sum)
-						+ " <ND燃料+弾薬> " + this.cut(this.hour.nd)　+ "\n"
+					init: function(){
+						const cut = this.cut
+						this.show = {
+							combi: this.combi.join('-'),
+							name: quests.map(function(x){return x.name}).join(', '),
+							time: quests.map(function(x){return Moment(x.time,"HH:mm:ss").format("mm:ss")}).join(', '),
+
+							oncend: '燃弾 ' + cut(this.once.nd),
+							oncendeach: '燃 ' + cut(this.once.n) + ' 弾 ' + cut(this.once.d),
+
+							oncesum: '合計' + cut(this.once.sum),
+							oncesumeach: '燃 ' + cut(this.once.n) + ' 弾 ' + cut(this.once.d) + ' 鋼 ' + cut(this.once.k) + ' ボ ' + cut(this.once.b),
+										
+							hournd: '燃弾 ' + cut(this.hour.nd),
+							hourndeach: '燃 ' + cut(this.hour.n) + ' 弾 ' + cut(this.hour.d),
+
+							hoursum: '合計' + cut(this.hour.sum),
+							hoursumeach: '燃 ' + cut(this.hour.n) + ' 弾 ' + cut(this.hour.d) + ' 鋼 ' + cut(this.hour.k) + ' ボ ' + cut(this.hour.b)
+						}
+						return this
 					}
-				}
+				}.init()
 			})
 			//map end
 			return this
 		},
 		rank_once_nd: function(maxtime){
-			return this.patterns.filter(function(a){
-				return a.maxtime < maxtime.str
-			}).sort(function(a,b){
-				return b.once.nd - a.once.nd
+			return this.patterns.filter(function(x){
+				return x.combi.some(function(x){
+					return _.contains(require_enseiID, x)
+				}) && (x.maxtime <= maxtime.str)
+			}).sort(function(x,y){
+				return y.once.nd - x.once.nd
 			})			
-		},	
+		},
 		rank_once_sum: function(maxtime){
-			return this.patterns.filter(function(a){
-				return a.maxtime < maxtime.str
-			}).sort(function(a,b){
-				return b.once.sum - a.once.sum
+			return this.patterns.filter(function(x){
+				return x.combi.some(function(x){
+					return _.contains(require_enseiID, x)
+				}) && (x.maxtime <= maxtime.str)
+			}).sort(function(x,y){
+				return y.once.sum - x.once.sum
 			})			
 		},
 		rank_hour_nd: function(){
-			return this.patterns.sort(function(a,b){
-				return b.hour.nd - a.hour.nd
+			return this.patterns.filter(function(x){
+				return x.combi.some(function(x){
+					return _.contains(require_enseiID, x)
+				})
+			}).sort(function(x,y){
+				return y.hour.nd - x.hour.nd
 			})
 		},
 		rank_hour_sum: function(){
-			return this.patterns.sort(function(a,b){
-				return b.hour.sum - a.hour.sum
+			return this.patterns.filter(function(x){
+				return x.combi.some(function(x){
+					return _.contains(require_enseiID, x)
+				})
+			}).sort(function(x,y){
+				return y.hour.sum - x.hour.sum
 			})
 		}
 	}.init()
 
 	////副作用
-	console.log("指定最大遠征時間: " + maxtime.str + "\n")
-	allcmb.rank_once_nd(maxtime).splice(1,1).forEach(function(val,index){
-		console.log("●単発ND1位")
-		console.log(val.show())
+	console.log("単発最大遠征時間: " + maxtime.str + "\n")
+	allcmb.rank_once_nd(maxtime).splice(0,1).forEach(function(val,index){
+		const x = val.show
+		const str = ""
+		+ "●単発燃弾1位" + " "
+		+ x.combi + " " + x.time + "\n" + x.name + "\n"
+		+ x.oncend + " " + x.oncendeach + "\n"
+		console.log(str)
 	})
-	allcmb.rank_once_sum(maxtime).splice(1,1).forEach(function(val,index){
-		console.log("●単発合計1位")
-		console.log(val.show())
+	allcmb.rank_once_sum(maxtime).splice(0,1).forEach(function(val,index){
+		const x = val.show
+		const str = ""
+		+ "●単発合計1位" + " "
+		+ x.combi + " " + x.time + "\n" + x.name + "\n"
+		+ x.oncesum + " " + x.oncesumeach + "\n"
+		console.log(str)
 	})
-	allcmb.rank_hour_nd().splice(1,1).forEach(function(val,index){
-		console.log("●時給ND1位")
-		console.log(val.show())
+	allcmb.rank_hour_nd().splice(0,1).forEach(function(val,index){
+		const x = val.show
+		const str = ""
+		+ "●時給燃弾1位" + " "
+		+ x.combi + " " + x.time + "\n" + x.name + "\n"
+		+ x.hournd + " " + x.hourndeach + "\n"
+		console.log(str)
 	})
-	allcmb.rank_hour_sum().splice(1,1).forEach(function(val,index){
-		console.log("●時給合計1位")
-		console.log(val.show())
+	allcmb.rank_hour_sum().splice(0,1).forEach(function(val,index){
+		const x = val.show
+		const str = ""
+		+ "●時給合計1位" + " "
+		+ x.combi + " " + x.time + "\n" + x.name + "\n"
+		+ x.hoursum + " " + x.hoursumeach + "\n"
+		console.log(str)
 	})
 
 })
