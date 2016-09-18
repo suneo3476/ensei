@@ -17,10 +17,14 @@ http://wikiwiki.jp/kancolle/?%B1%F3%C0%AC#h2_content_1_4
 
 前提: gitとnode.jsがインストールされている
 
-1. git clone https://github.com/suneo3476/ensei
+1. git clone https://github.com/suneo3476/ensei （github上からダウンロードして展開でもOK）
 2. npm install
-3. node ensei
+3. ense.js を開いて入力部分と出力部分を適当に編集し（出力は例を見ながら適当書けばOK）
+4. node ensei
 
 その他:
-- ensei.jsの「入力」部分で最大遠征時間と艦隊数を変えてください。
 - 暇な人は対話型作ってください。
+
+質問:
+Twitter: @suneo3476Pro https://twitter.com/suneo3476Pro 
+E-mail: suneo3476@gmail.com
