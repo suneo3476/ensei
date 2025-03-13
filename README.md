@@ -24,7 +24,3 @@ http://wikiwiki.jp/kancolle/?%B1%F3%C0%AC#h2_content_1_4
 
 その他:
 - 暇な人は対話型作ってください。
-
-質問:
-Twitter: @suneo3476Pro https://twitter.com/suneo3476Pro 
-E-mail: suneo3476@gmail.com
